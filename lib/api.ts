@@ -46,6 +46,8 @@ export interface DropItem {
   total: number // initial stock, used for the "X of Y left" label
 }
 
+export type ClaimStatus = 'Reserved' | 'Collected' | 'Expired'
+
 // A reservation made by a user, surfaced on Claim Success and My Claims.
 export interface Claim {
   id: string
@@ -57,6 +59,38 @@ export interface Claim {
   code: string
   price: number
   claimedAt: number
+  status: ClaimStatus
+}
+
+// A merchant's published listing, shown on the Merchant Dashboard.
+export interface Listing {
+  id: string
+  item: string
+  type: 'Daily Drop' | 'Surplus Box'
+  cuisine: Cuisine
+  left: number
+  total: number
+  claims: number
+  price: number
+}
+
+// A claim as seen from the merchant side (who reserved what).
+export interface MerchantClaim {
+  id: string
+  code: string
+  item: string
+  who: string
+  status: ClaimStatus
+}
+
+// Payload sent from the Create Listing form.
+export interface ListingPayload {
+  type: 'Daily Drop' | 'Surplus Box'
+  item: string
+  description: string
+  originalPrice: number
+  salePrice: number
+  quantity: number
 }
 
 // Per cuisine tile colors used for the striped placeholder image tiles.
@@ -310,6 +344,7 @@ export async function claimItem(
     code: generatePickupCode(item.venue),
     price: item.salePrice,
     claimedAt: Date.now(),
+    status: 'Reserved',
   }
   return delay({ claim, items: DROP_ITEMS.map((d) => ({ ...d })) })
 }
@@ -338,6 +373,161 @@ export async function claimBox(id: string, _userId: string): Promise<Claim> {
     code: generatePickupCode(box.venue),
     price: box.salePrice,
     claimedAt: Date.now(),
+    status: 'Reserved',
   }
   return delay(claim)
+}
+
+// ----------------------------------------------------------------------------
+// My Claims (consumer side)
+// ----------------------------------------------------------------------------
+const SEEDED_CLAIMS: Claim[] = [
+  {
+    id: 'seed-claim-1',
+    item: 'Pasta Rescue Box',
+    venue: 'Trevi Cucina',
+    cuisine: 'Italian',
+    window: 'Today, 6:00pm to 8:00pm',
+    type: 'Mystery Box',
+    code: 'TRV 8472',
+    price: 7.5,
+    claimedAt: Date.now() - 1000 * 60 * 30,
+    status: 'Reserved',
+  },
+  {
+    id: 'seed-claim-2',
+    item: 'Almond Croissant',
+    venue: 'Dawn Bakehouse',
+    cuisine: 'Bakery',
+    window: 'Today, 5:00pm to 5:30pm',
+    type: 'Daily Drop',
+    code: 'DWN 1190',
+    price: 1.99,
+    claimedAt: Date.now() - 1000 * 60 * 60,
+    status: 'Reserved',
+  },
+  {
+    id: 'seed-claim-3',
+    item: 'Pho Surplus Bag',
+    venue: 'Mekong Street',
+    cuisine: 'Vietnamese',
+    window: 'Yesterday, 7:00pm to 9:00pm',
+    type: 'Mystery Box',
+    code: 'MEK 3318',
+    price: 8,
+    claimedAt: Date.now() - 1000 * 60 * 60 * 26,
+    status: 'Collected',
+  },
+  {
+    id: 'seed-claim-4',
+    item: 'Vegan Power Box',
+    venue: 'Green Fork',
+    cuisine: 'Vegan',
+    window: 'Mon, 3:00pm to 5:00pm',
+    type: 'Mystery Box',
+    code: 'GRE 7045',
+    price: 7.5,
+    claimedAt: Date.now() - 1000 * 60 * 60 * 50,
+    status: 'Collected',
+  },
+  {
+    id: 'seed-claim-5',
+    item: 'Sushi Rescue Tray',
+    venue: 'Sakura Tokyo',
+    cuisine: 'Sushi',
+    window: 'Sun, 6:00pm to 8:00pm',
+    type: 'Daily Drop',
+    code: 'SAK 2290',
+    price: 10,
+    claimedAt: Date.now() - 1000 * 60 * 60 * 74,
+    status: 'Expired',
+  },
+]
+
+export async function getMyClaims(_userId: string): Promise<Claim[]> {
+  return delay(SEEDED_CLAIMS.map((c) => ({ ...c })))
+}
+
+// ----------------------------------------------------------------------------
+// Merchant dashboard
+// ----------------------------------------------------------------------------
+const MERCHANT_LISTINGS: Listing[] = [
+  {
+    id: 'listing-1',
+    item: 'Almond Croissant',
+    type: 'Daily Drop',
+    cuisine: 'Bakery',
+    left: 4,
+    total: 8,
+    claims: 4,
+    price: 1.99,
+  },
+  {
+    id: 'listing-2',
+    item: 'Mystery Pastry Box',
+    type: 'Surplus Box',
+    cuisine: 'Bakery',
+    left: 3,
+    total: 6,
+    claims: 3,
+    price: 5.99,
+  },
+  {
+    id: 'listing-3',
+    item: 'Sourdough Loaf Bag',
+    type: 'Surplus Box',
+    cuisine: 'Bakery',
+    left: 0,
+    total: 5,
+    claims: 5,
+    price: 4.5,
+  },
+]
+
+const MERCHANT_CLAIMS: MerchantClaim[] = [
+  { id: 'mc-1', code: 'DWN 1190', item: 'Almond Croissant', who: 'Ava M.', status: 'Reserved' },
+  { id: 'mc-2', code: 'DWN 7732', item: 'Mystery Pastry Box', who: 'Liam K.', status: 'Reserved' },
+  { id: 'mc-3', code: 'DWN 5510', item: 'Sourdough Loaf Bag', who: 'Noah P.', status: 'Collected' },
+  { id: 'mc-4', code: 'DWN 4408', item: 'Almond Croissant', who: 'Mia R.', status: 'Collected' },
+  { id: 'mc-5', code: 'DWN 1276', item: 'Sourdough Loaf Bag', who: 'Ethan W.', status: 'Expired' },
+]
+
+export interface MerchantImpact {
+  mealsRescued: number
+  revenueRecovered: number
+  newCustomers: number
+  wasteSavedKg: number
+}
+
+export async function getMerchantImpact(_venueId: string): Promise<MerchantImpact> {
+  return delay({
+    mealsRescued: 142,
+    revenueRecovered: 880,
+    newCustomers: 64,
+    wasteSavedKg: 38,
+  })
+}
+
+export async function getMerchantListings(_venueId: string): Promise<Listing[]> {
+  return delay(MERCHANT_LISTINGS.map((l) => ({ ...l })))
+}
+
+export async function getMerchantClaims(_venueId: string): Promise<MerchantClaim[]> {
+  return delay(MERCHANT_CLAIMS.map((c) => ({ ...c })))
+}
+
+// Create a new listing: prepend it to the merchant's active listings.
+export async function createListing(payload: ListingPayload): Promise<Listing> {
+  const listing: Listing = {
+    id: `listing-${Date.now()}`,
+    item: payload.item.trim() || 'Untitled listing',
+    type: payload.type,
+    cuisine: 'Bakery',
+    left: payload.quantity,
+    total: payload.quantity,
+    claims: 0,
+    price: payload.salePrice,
+  }
+  MERCHANT_LISTINGS.unshift(listing)
+  return delay(listing)
 }

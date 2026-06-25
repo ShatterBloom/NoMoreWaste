@@ -2,25 +2,16 @@
 
 import { ClaimSuccessScreen } from './claim-success-screen'
 import { ClaimsProvider } from './claims-store'
+import { CreateListingScreen } from './create-listing-screen'
 import { DetailScreen } from './detail-screen'
 import { DiscoverScreen } from './discover-screen'
 import { DropScreen } from './drop-screen'
+import { MerchantScreen } from './merchant-screen'
+import { MyClaimsScreen } from './my-claims-screen'
 import { NavProvider, useNav } from './navigation'
 import { SiteFooter } from './site-footer'
 import { SiteHeader } from './site-header'
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col items-center justify-center px-7 py-24 text-center">
-      <h2 className="font-heading text-[30px]" style={{ fontWeight: 800, letterSpacing: '-0.8px' }}>
-        {title}
-      </h2>
-      <p className="mt-2 text-[15px]" style={{ color: 'var(--color-muted)' }}>
-        This screen is coming in a later step.
-      </p>
-    </main>
-  )
-}
+import { ToastProvider } from './toast'
 
 function ActiveScreen() {
   const { screen } = useNav()
@@ -34,11 +25,11 @@ function ActiveScreen() {
     case 'claim':
       return <ClaimSuccessScreen />
     case 'myclaims':
-      return <ComingSoon title="My Claims" />
+      return <MyClaimsScreen />
     case 'merchant':
-      return <ComingSoon title="For Merchants" />
+      return <MerchantScreen />
     case 'create':
-      return <ComingSoon title="Create a listing" />
+      return <CreateListingScreen />
     default:
       return <DiscoverScreen />
   }
@@ -48,11 +39,13 @@ export function App() {
   return (
     <NavProvider>
       <ClaimsProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <ActiveScreen />
-          <SiteFooter />
-        </div>
+        <ToastProvider>
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <ActiveScreen />
+            <SiteFooter />
+          </div>
+        </ToastProvider>
       </ClaimsProvider>
     </NavProvider>
   )
