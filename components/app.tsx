@@ -1,6 +1,10 @@
 'use client'
 
+import { ClaimSuccessScreen } from './claim-success-screen'
+import { ClaimsProvider } from './claims-store'
+import { DetailScreen } from './detail-screen'
 import { DiscoverScreen } from './discover-screen'
+import { DropScreen } from './drop-screen'
 import { NavProvider, useNav } from './navigation'
 import { SiteFooter } from './site-footer'
 import { SiteHeader } from './site-header'
@@ -24,11 +28,11 @@ function ActiveScreen() {
     case 'discover':
       return <DiscoverScreen />
     case 'drop':
-      return <ComingSoon title="Daily Drop" />
+      return <DropScreen />
     case 'detail':
-      return <ComingSoon title="Box detail" />
+      return <DetailScreen />
     case 'claim':
-      return <ComingSoon title="Claim" />
+      return <ClaimSuccessScreen />
     case 'myclaims':
       return <ComingSoon title="My Claims" />
     case 'merchant':
@@ -43,11 +47,13 @@ function ActiveScreen() {
 export function App() {
   return (
     <NavProvider>
-      <div className="flex min-h-screen flex-col">
-        <SiteHeader />
-        <ActiveScreen />
-        <SiteFooter />
-      </div>
+      <ClaimsProvider>
+        <div className="flex min-h-screen flex-col">
+          <SiteHeader />
+          <ActiveScreen />
+          <SiteFooter />
+        </div>
+      </ClaimsProvider>
     </NavProvider>
   )
 }
